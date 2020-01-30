@@ -1,0 +1,75 @@
+<head>
+    <link rel="stylesheet" href="index.css">
+</head>
+<div onmousemove="updateMouse(event)" id="canvasHolder">
+    <canvas id="canvas"></canvas>  
+</div>
+<div id="information">
+    <p id="demo"></p>
+    <p id="imageInformation"></p>    
+</div>
+<!-- vertex shader -->
+<img src="images/normals.jpg" id="normals" hidden></img>
+<script  id="2d-vertex-shader" type="x-shader/x-vertex">
+attribute vec2 a_position;
+attribute vec2 a_texCoord;
+
+uniform vec2 u_resolution;
+
+varying vec2 v_texCoord;
+
+void main() {
+   // convert the rectangle from pixels to 0.0 to 1.0
+   vec2 zeroToOne = a_position / u_resolution;
+
+   // convert from 0->1 to 0->2
+   vec2 zeroToTwo = zeroToOne * 2.0;
+
+   // convert from 0->2 to -1->+1 (clipspace)
+   vec2 clipSpace = zeroToTwo - 1.0;
+
+   gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
+
+   // pass the texCoord to the fragment shader
+   // The GPU will interpolate this value between points.
+   v_texCoord = a_texCoord;
+}
+</script>
+<!-- fragment shader -->
+<script  id="2d-fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+
+// our texture
+uniform sampler2D u_image;
+uniform vec2 u_mouse;
+
+// the texCoords passed in from the vertex shader.
+varying vec2 v_texCoord;
+
+void main() {
+    vec4 normal = texture2D(u_image, v_texCoord);
+
+    //Directional Light
+    //The light direction is from the mouse position to orgin.
+    vec3 lightDirection = -1.0 * normalize(vec3(0, 0, 0) - vec3(u_mouse.x, u_mouse.y, 1.0));
+
+    vec4 correctedNormals = normal;
+    correctedNormals.x = 2.0 * correctedNormals.x - 1.0;
+    correctedNormals.y = 2.0 * correctedNormals.y - 1.0;
+
+    vec3 normalDirection = normalize(vec3(correctedNormals.x, correctedNormals.y, correctedNormals.z));
+
+    float intensity = max(0.0, dot(normalDirection, lightDirection));
+    
+    // gl_FragColor = (1.0 - intensity) * normal + vec4(intensity, intensity, intensity, 1);
+    gl_FragColor = vec4(intensity, intensity, intensity, 1);
+}
+</script><!--
+for most samples webgl-utils only provides shader compiling/linking and
+canvas resizing because why clutter the examples with code that's the same in every sample.
+See http://webglfundamentals.org/webgl/lessons/webgl-boilerplate.html
+and http://webglfundamentals.org/webgl/lessons/webgl-resizing-the-canvas.html
+for webgl-utils, m3, m4, and webgl-lessons-ui.
+-->
+<script src="https://webglfundamentals.org/webgl/resources/webgl-utils.js"></script>
+<script src="js/main.js"></script>
