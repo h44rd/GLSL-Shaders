@@ -6,10 +6,14 @@
 </div>
 <div id="information">
     <p id="demo"></p>
-    <p id="imageInformation"></p>    
+    <p id="imageInformation"></p>
+    Bright image url : <input type="text" id="bright_url"><br>
+    Dark image url : <input type="text" id="dark_url"><br>
+    Normal map url : <input type="text" id="normal_map_url"><br>
+    <button onclick="urlInputByUser()">Submit URLs</button>
+        
 </div>
 <!-- vertex shader -->
-<img src="images/normals.jpg" id="normals" hidden></img>
 <script  id="2d-vertex-shader" type="x-shader/x-vertex">
 attribute vec2 a_position;
 attribute vec2 a_texCoord;
@@ -40,14 +44,22 @@ void main() {
 precision mediump float;
 
 // our texture
-uniform sampler2D u_image;
+uniform sampler2D u_bright;
+uniform sampler2D u_dark;
+uniform sampler2D u_normal_map;
+
+
 uniform vec2 u_mouse;
 
 // the texCoords passed in from the vertex shader.
 varying vec2 v_texCoord;
 
 void main() {
-    vec4 normal = texture2D(u_image, v_texCoord);
+    vec4 normal = texture2D(u_normal_map, v_texCoord);
+    vec4 bright = texture2D(u_bright, v_texCoord);
+    vec4 dark = texture2D(u_dark, v_texCoord);
+
+    // normal = pow(normal, vec4(2.0));
 
     //Directional Light
     //The light direction is from the mouse position to orgin.
@@ -62,7 +74,7 @@ void main() {
     float intensity = max(0.0, dot(normalDirection, lightDirection));
     
     // gl_FragColor = (1.0 - intensity) * normal + vec4(intensity, intensity, intensity, 1);
-    gl_FragColor = vec4(intensity, intensity, intensity, 1);
+    gl_FragColor = intensity * bright + (1.0 - intensity) * dark;
 }
 </script><!--
 for most samples webgl-utils only provides shader compiling/linking and

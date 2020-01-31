@@ -3,37 +3,70 @@
 // Image source: https://commons.wikimedia.org/wiki/File:Normal_map_example_-_Map.png
 var imgURL;
 
-function main() {
-  var m_image = new Image();
-
-  imgURL = document.getElementById('normals').src
-  // imgURL = 'images/normals.jpg'
-  // imgURL = 'https://raw.githubusercontent.com/h44rd/Aquarium-Simulation-3D/master/textures/codfish.png'
-  imgURL = 'https://upload.wikimedia.org/wikipedia/commons/3/3b/Normal_map_example_-_Map.png';
-  // imgURL = 'https://upload.wikimedia.org/wikipedia/en/4/44/SpongeBob_SquarePants_characters_promo.png';
-
-  document.getElementById("imageInformation").innerHTML = "Image Source: " + imgURL;
-
-  requestCORSIfNotSameOrigin(m_image, imgURL)
-  m_image.src = imgURL;
-
-  m_image.onload = function() {
-    render(m_image);
-  };
-}
-
 var canvas, gl, program, image, resolutionLocation, mouseLocation, mousex, mousey;
 
-function render(m_image) {
+var num_images;
+
+function urlInputByUser() {
+  var bright_url = document.getElementById("bright_url").value;
+  var dark_url = document.getElementById("dark_url").value;
+  var normal_map_url = document.getElementById("normal_map_url").value;
+
+  // document.getElementById("imageInformation").innerHTML = bright_url + dark_url + normal_map_url;
+
+  console.log("Urls : " + bright_url + dark_url + normal_map_url);
+}
+
+function main() {
+
+  var images = {'bright' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Homer/DI1.png', Image : null},
+                    'dark' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Homer/DI0.png', Image : null},
+                    'normal_map' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Homer/SM.png', Image : null}
+                  };
+
+  
+
+  loadImages(images, render);
+}
+
+function loadImage(url, callback) {
+  var image = new Image();
+  requestCORSIfNotSameOrigin(image, url)
+  image.src = url;
+  image.onload = callback;
+  return image;
+}
+
+function loadImages(m_images, callback) {
+  // var images = [];
+  var imagesToLoad = Object.keys(m_images).length;
+ 
+  // Called each time an image finished loading.
+  var onImageLoad = function() {
+    --imagesToLoad;
+    // If all the images are loaded call the callback.
+    if (imagesToLoad == 0) {
+      callback(m_images);
+    }
+  };
+ 
+  for (var image_i in m_images) {
+    var image = loadImage(m_images[image_i].url, onImageLoad);
+    m_images[image_i].Image = image;
+  }
+}
+
+
+
+function render(images) {
   // Get A WebGL context
   /** @type {HTMLCanvasElement} */
-  image = m_image;
+
   canvas = document.getElementById("canvas");
   gl = canvas.getContext("webgl");
   if (!gl) {
     return;
   }
-  console.log(image.width)
 
   // setup GLSL program
   program = webglUtils.createProgramFromScripts(gl, ["2d-vertex-shader", "2d-fragment-shader"]);
@@ -50,6 +83,8 @@ function render(m_image) {
   // Set a rectangle the same size as the image.
 
   webglUtils.resizeCanvasToDisplaySize(gl.canvas);
+
+  var image = images['bright'].Image;
 
   var rectangleHeight = gl.canvas.height;
   var rectangleWidth = (image.width/image.height) * gl.canvas.height;
@@ -70,18 +105,46 @@ function render(m_image) {
       1.0,  1.0,
   ]), gl.STATIC_DRAW);
 
-  // Create a texture.
-  var texture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, texture);
 
-  // Set the parameters so we can render any size image.
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  // ------------------------------------------------------------------------------------- //
 
-  // Upload the image into the texture.
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+  var texturesNum = Object.keys(images).length;
+  for (var key in images) {
+    var texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+
+    // Set the parameters so we can render any size image.
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+    // Upload the image into the texture.
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, images[key].Image);
+
+    // add the texture to the array of textures.
+    images[key].Texture = texture;
+  }
+
+
+  for(var key in images) {
+    images[key].UniformLoc = gl.getUniformLocation(program, "u_" + key);
+  }
+
+  // ------------------------------------------------------------------------------------- //
+
+  // // Create a texture.
+  // var texture = gl.createTexture();
+  // gl.bindTexture(gl.TEXTURE_2D, texture);
+
+  // // Set the parameters so we can render any size image.
+  // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+  // // Upload the image into the texture.
+  // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 
   // lookup uniforms
   resolutionLocation = gl.getUniformLocation(program, "u_resolution");
@@ -127,6 +190,21 @@ function render(m_image) {
   var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
   var offset = 0;        // start at the beginning of the buffer
   gl.vertexAttribPointer(texcoordLocation, size, type, normalize, stride, offset);
+
+  // --------------------------------------------------------------------------------- //
+  var i = 0;
+  for(var key in images) {
+    gl.uniform1i(images[key].UniformLoc, i);
+    i++;
+  }
+
+  i = 0;
+  for(var key in images) {
+    gl.activeTexture(gl.TEXTURE0 + i);
+    gl.bindTexture(gl.TEXTURE_2D, images[key].Texture);
+    i++;  
+  }
+  //----------------------------------------------------------------------------------- //
 
   animateScene();
 }
