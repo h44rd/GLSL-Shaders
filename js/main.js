@@ -14,7 +14,14 @@ function urlInputByUser() {
 
   // document.getElementById("imageInformation").innerHTML = bright_url + dark_url + normal_map_url;
 
-  console.log("Urls : " + bright_url + dark_url + normal_map_url);
+  var images = {'bright' : { url : bright_url},
+               'dark' : { url : dark_url},
+                'normal_map' : { url : normal_map_url}
+              };
+
+  console.log("Urls : " + images['bright'].url + "<br>" + dark_url + "<br>" + normal_map_url);
+
+  loadImages(images, render);
 }
 
 function main() {
@@ -30,6 +37,7 @@ function main() {
 }
 
 function loadImage(url, callback) {
+  console.log(url);
   var image = new Image();
   requestCORSIfNotSameOrigin(image, url)
   image.src = url;
@@ -116,8 +124,8 @@ function render(images) {
     // Set the parameters so we can render any size image.
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
     // Upload the image into the texture.
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, images[key].Image);
