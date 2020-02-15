@@ -88,16 +88,42 @@ void main() {
         correctedNormals.z = sin(v_texCoord.x*scaleFactor) + sin(v_texCoord.y*scaleFactor);
     }
 
+    
     vec3 normalDirection = normalize(vec3(correctedNormals.x, correctedNormals.y, correctedNormals.z));
 
-    float intensity = max(0.0, dot(normalDirection, lightDirection));
+    // ********************************************************
+    // Diffuse Shading
+    float intensity_diffuse = max(0.0, dot(normalDirection, lightDirection));
     
     float edge1 = 0.5 - u_interpolateDistance/2.0;
     float edge2 = 0.5 + u_interpolateDistance/2.0; 
-    intensity = smoothstep(edge1, edge2, intensity);
+    intensity_diffuse = smoothstep(edge1, edge2, intensity_diffuse);
+    //*********************************************************
+
+
+    //*********************************************************
+    // Specular Shading
+    vec3 eye = -1.0 * normalize(vec3(v_texCoord.x, v_texCoord.y, 0) - vec3(u_mouse.x, u_mouse.y, 1.0));
+
+    vec3 reflection = -1.0 * lightDirection + 2.0 * dot(normalDirection, lightDirection) * normalDirection;
     
+    reflection = normalize(reflection);
+
+    float intensity_specular = max(0.0, dot(eye, reflection));
+    
+    //*********************************************************
+
+
+
+
+
     // gl_FragColor = (1.0 - intensity) * normal + vec4(intensity, intensity, intensity, 1);
-    gl_FragColor = intensity * bright + (1.0 - intensity) * dark;
+    
+    vec4 diffuse = intensity_diffuse * bright + (1.0 - intensity_diffuse) * dark;
+
+    vec4 specular = intensity_specular * normalize((diffuse + bright)) + (1.0 - intensity_specular) * normalize((diffuse + dark));
+
+    gl_FragColor = specular;
     //gl_FragColor = vec4(1.0, v_texCoord.y, v_texCoord.x, 1.0);
 }
 </script><!--
