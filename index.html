@@ -6,11 +6,16 @@
 </div>
 <div id="information">
     <p id="demo"></p>
+    <button onclick="seeNextImage()">See Next Image</button>
+    <button onclick="toggleVectorField()">Toggle Vector Field</button>
     <p id="imageInformation"></p>
     Bright image url : <input type="text" id="bright_url"><br>
     Dark image url : <input type="text" id="dark_url"><br>
     Normal map url : <input type="text" id="normal_map_url"><br>
     <button onclick="urlInputByUser()">Submit URLs</button>
+    <br>
+    <p>Cartoon Effect: </p>
+    <input type="range" min="1" max="50" value="25" oninput="cartoonEffect()" id="cartoonSlider">
         
 </div>
 <!-- vertex shader -->
@@ -48,6 +53,9 @@ uniform sampler2D u_bright;
 uniform sampler2D u_dark;
 uniform sampler2D u_normal_map;
 
+uniform int u_ifUseVectorField;
+uniform float u_interpolateDistance;
+
 
 uniform vec2 u_mouse;
 
@@ -59,6 +67,8 @@ void main() {
     vec4 bright = texture2D(u_bright, v_texCoord);
     vec4 dark = texture2D(u_dark, v_texCoord);
 
+    // dark = dark / 2.0;
+
     // normal = pow(normal, vec4(2.0));
 
     //Directional Light
@@ -68,13 +78,27 @@ void main() {
     vec4 correctedNormals = normal;
     correctedNormals.x = 2.0 * correctedNormals.x - 1.0;
     correctedNormals.y = 2.0 * correctedNormals.y - 1.0;
+    // correctedNormals.z = correctedNormals.z * correctedNormals.z;
+
+    float scaleFactor = 25.0;
+
+    if(u_ifUseVectorField > 5) {
+        correctedNormals.x = sin(v_texCoord.x*scaleFactor) + 0.5;
+        correctedNormals.y = sin(v_texCoord.y*scaleFactor) + 0.5;
+        correctedNormals.z = sin(v_texCoord.x*scaleFactor) + sin(v_texCoord.y*scaleFactor);
+    }
 
     vec3 normalDirection = normalize(vec3(correctedNormals.x, correctedNormals.y, correctedNormals.z));
 
     float intensity = max(0.0, dot(normalDirection, lightDirection));
     
+    float edge1 = 0.5 - u_interpolateDistance/2.0;
+    float edge2 = 0.5 + u_interpolateDistance/2.0; 
+    intensity = smoothstep(edge1, edge2, intensity);
+    
     // gl_FragColor = (1.0 - intensity) * normal + vec4(intensity, intensity, intensity, 1);
     gl_FragColor = intensity * bright + (1.0 - intensity) * dark;
+    //gl_FragColor = vec4(1.0, v_texCoord.y, v_texCoord.x, 1.0);
 }
 </script><!--
 for most samples webgl-utils only provides shader compiling/linking and

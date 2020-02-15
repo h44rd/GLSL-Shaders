@@ -3,9 +3,33 @@
 // Image source: https://commons.wikimedia.org/wiki/File:Normal_map_example_-_Map.png
 var imgURL;
 
-var canvas, gl, program, image, resolutionLocation, mouseLocation, mousex, mousey;
+var canvas, gl, program, image, resolutionLocation, mouseLocation, mousex, mousey, ifuseVectorFieldLocation, ifUseVectorField;
+var interpolateDistanceLoc, interpolateDistance;
 
 var num_images;
+
+var images_list;
+
+var current_index, total_images;
+
+function cartoonEffect() {
+  var sliderVal = document.getElementById("cartoonSlider").value;
+  var paramCartoon = parseInt(sliderVal);
+  interpolateDistance = 0.5 - paramCartoon/100.0;
+}
+
+function seeNextImage() {
+  current_index = (current_index + 1) % images_list.length;
+  loadImages(images_list[current_index], render);
+}
+
+function toggleVectorField() {
+  if(ifUseVectorField < 5) {
+    ifUseVectorField = 10;
+  } else {
+    ifUseVectorField = 0;
+  }
+}
 
 function urlInputByUser() {
   var bright_url = document.getElementById("bright_url").value;
@@ -18,7 +42,7 @@ function urlInputByUser() {
                'dark' : { url : dark_url},
                 'normal_map' : { url : normal_map_url}
               };
-
+  images_list.push(images);
   console.log("Urls : " + images['bright'].url + "<br>" + dark_url + "<br>" + normal_map_url);
 
   loadImages(images, render);
@@ -26,14 +50,29 @@ function urlInputByUser() {
 
 function main() {
 
-  var images = {'bright' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Homer/DI1.png', Image : null},
+  images_list = [{'bright' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Homer/DI1.png', Image : null},
                     'dark' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Homer/DI0.png', Image : null},
                     'normal_map' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Homer/SM.png', Image : null}
-                  };
+                  }];
 
+  images_list.push({'dark' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Shapes/bright.png', Image : null},
+              'bright' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Shapes/dark.png', Image : null},
+              'normal_map' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Shapes/normalmap.png', Image : null}
+              });
   
+  images_list.push({'dark' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Shapes/Shape1/dark.png', Image : null},
+              'bright' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Shapes/Shape1/bright.png', Image : null},
+              'normal_map' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Shapes/Shape1/nomal.png', Image : null}
+              });
 
-  loadImages(images, render);
+  images_list.push({'dark' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Shapes/Shape2/dark.png', Image : null},
+              'bright' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Shapes/Shape2/bright.png', Image : null},
+              'normal_map' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Shapes/Shape2/nomal.png', Image : null}
+              });
+  current_index = 0;
+  ifUseVectorField = 0;
+  interpolateDistance = 0.2;
+  loadImages(images_list[0], render);
 }
 
 function loadImage(url, callback) {
@@ -160,6 +199,11 @@ function render(images) {
   // lookup mouse 
   mouseLocation = gl.getUniformLocation(program, "u_mouse");
 
+  // lookup ifUseVectorField
+  ifuseVectorFieldLocation = gl.getUniformLocation(program, "u_ifUseVectorField");
+
+  interpolateDistanceLoc = gl.getUniformLocation(program, "u_interpolateDistance");
+
   // Tell WebGL how to convert from clip space to pixels
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
@@ -222,6 +266,10 @@ function animateScene() {
   gl.uniform2f(resolutionLocation, gl.canvas.width, gl.canvas.height);
 
   gl.uniform2f(mouseLocation, mousex * 1.0 / gl.canvas.width, mousey * 1.0 / gl.canvas.height);
+
+  gl.uniform1i(ifuseVectorFieldLocation, ifUseVectorField);
+
+  gl.uniform1f(interpolateDistanceLoc, interpolateDistance);
 
   // Draw the rectangle.
   var primitiveType = gl.TRIANGLES;
