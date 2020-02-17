@@ -108,11 +108,23 @@ void main() {
     vec3 reflection = -1.0 * lightDirection + 2.0 * dot(normalDirection, lightDirection) * normalDirection;
     
     reflection = normalize(reflection);
-
+    
     float intensity_specular = max(0.0, dot(eye, reflection));
     
     //*********************************************************
 
+    //*********************************************************
+    //Border
+    vec3 downVector = vec3(0.0, 0.0, 1.0);
+
+    float intensity_border = max(0.0, 1.0 - dot(downVector, normalDirection));
+
+    intensity_border = smoothstep(0.8, 0.9, intensity_border);
+
+    if(intensity_border < 0.0) {
+        intensity_border = 0.0;
+    }
+    //*********************************************************
 
 
 
@@ -121,9 +133,9 @@ void main() {
     
     vec4 diffuse = intensity_diffuse * bright + (1.0 - intensity_diffuse) * dark;
 
-    vec4 specular = intensity_specular * normalize((diffuse + bright)) + (1.0 - intensity_specular) * normalize((diffuse + dark));
+    vec4 specular = intensity_specular * normalize((diffuse + bright)) + (1.0 - intensity_specular) * normalize((diffuse + dark)) + intensity_border * vec4(0.3, 0.4, 0.6, 1.0);
 
-    gl_FragColor = specular;
+    gl_FragColor = normalize(specular);
     //gl_FragColor = vec4(1.0, v_texCoord.y, v_texCoord.x, 1.0);
 }
 </script><!--
