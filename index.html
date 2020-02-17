@@ -67,13 +67,15 @@ void main() {
     vec4 bright = texture2D(u_bright, v_texCoord);
     vec4 dark = texture2D(u_dark, v_texCoord);
 
+    float lightHeight = 1.0;
+
     // dark = dark / 2.0;
 
     // normal = pow(normal, vec4(2.0));
 
     //Directional Light
     //The light direction is from the mouse position to orgin.
-    vec3 lightDirection = -1.0 * normalize(vec3(0, 0, 0) - vec3(u_mouse.x, u_mouse.y, 1.0));
+    vec3 lightDirection = -1.0 * normalize(vec3(0.0, 0.0, 0.0) - vec3(u_mouse.x, u_mouse.y, lightHeight));
 
     vec4 correctedNormals = normal;
     correctedNormals.x = 2.0 * correctedNormals.x - 1.0;
@@ -97,20 +99,25 @@ void main() {
     
     float edge1 = 0.5 - u_interpolateDistance/2.0;
     float edge2 = 0.5 + u_interpolateDistance/2.0; 
+
+    //intensity_diffuse = pow(intensity_diffuse, 3.0);
+
     intensity_diffuse = smoothstep(edge1, edge2, intensity_diffuse);
     //*********************************************************
 
 
     //*********************************************************
     // Specular Shading
-    vec3 eye = -1.0 * normalize(vec3(v_texCoord.x, v_texCoord.y, 0) - vec3(u_mouse.x, u_mouse.y, 1.0));
+    vec3 eye = -1.0 * normalize(vec3(v_texCoord.x, v_texCoord.y, 0) - vec3(u_mouse.x, u_mouse.y, lightHeight));
 
     vec3 reflection = -1.0 * lightDirection + 2.0 * dot(normalDirection, lightDirection) * normalDirection;
     
-    reflection = normalize(reflection);
+    //reflection = normalize(reflection);
     
     float intensity_specular = max(0.0, dot(eye, reflection));
     
+    intensity_specular = pow(intensity_specular, 3.0);
+    intensity_specular = smoothstep(edge1, edge2, intensity_specular);
     //*********************************************************
 
     //*********************************************************
@@ -119,23 +126,16 @@ void main() {
 
     float intensity_border = max(0.0, 1.0 - dot(downVector, normalDirection));
 
-    intensity_border = smoothstep(0.8, 0.9, intensity_border);
-
-    if(intensity_border < 0.0) {
-        intensity_border = 0.0;
-    }
+    intensity_border = smoothstep(0.7, 0.9, intensity_border);
     //*********************************************************
 
-
-
-
-    // gl_FragColor = (1.0 - intensity) * normal + vec4(intensity, intensity, intensity, 1);
-    
     vec4 diffuse = intensity_diffuse * bright + (1.0 - intensity_diffuse) * dark;
 
-    vec4 specular = intensity_specular * normalize((diffuse + bright)) + (1.0 - intensity_specular) * normalize((diffuse + dark)) + intensity_border * vec4(0.3, 0.4, 0.6, 1.0);
+    vec4 specular = intensity_specular * (bright + diffuse) + (1.0 - intensity_specular) * diffuse;
 
-    gl_FragColor = normalize(specular);
+    vec4 border = intensity_border * dark + (1.0 - intensity_border) * specular;
+    
+    gl_FragColor = border;
     //gl_FragColor = vec4(1.0, v_texCoord.y, v_texCoord.x, 1.0);
 }
 </script><!--
