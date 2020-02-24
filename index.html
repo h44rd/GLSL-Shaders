@@ -16,7 +16,9 @@
     <br>
     <p>Cartoon Effect: </p>
     <input type="range" min="1" max="50" value="25" oninput="cartoonEffect()" id="cartoonSlider">
-        
+    
+    <p>Index of Refraction: </p>
+    <input type="range" min="0" max="200" value="50" oninput="changeIOR()" id="iorSlider">
 </div>
 <!-- vertex shader -->
 <script  id="2d-vertex-shader" type="x-shader/x-vertex">
@@ -55,6 +57,7 @@ uniform sampler2D u_normal_map;
 
 uniform int u_ifUseVectorField;
 uniform float u_interpolateDistance;
+uniform float u_index_of_refraction;
 
 
 uniform vec2 u_mouse;
@@ -64,8 +67,11 @@ varying vec2 v_texCoord;
 
 void main() {
     vec4 normal = texture2D(u_normal_map, v_texCoord);
-    vec4 bright = texture2D(u_bright, v_texCoord);
-    vec4 dark = texture2D(u_dark, v_texCoord);
+    // vec4 bright = texture2D(u_bright, v_texCoord);
+    // vec4 dark = texture2D(u_dark, v_texCoord);
+
+    vec4 bright = vec4(1.0, 1.0, 1.0, 1.0);
+    vec4 dark = vec4(0.0, 0.0, 0.0, 1.0);
 
     float lightHeight = 1.0;
 
@@ -112,7 +118,7 @@ void main() {
 
     vec3 reflection = -1.0 * lightDirection + 2.0 * dot(normalDirection, lightDirection) * normalDirection;
     
-    //reflection = normalize(reflection);
+    reflection = normalize(reflection);
     
     float intensity_specular = max(0.0, dot(eye, reflection));
     
@@ -129,13 +135,70 @@ void main() {
     intensity_border = smoothstep(0.7, 0.9, intensity_border);
     //*********************************************************
 
+
+    //*********************************************************
+    //Refraction
+    float alpha = log2(u_index_of_refraction);
+
+    vec3 refracted;
+    vec3 s;
+
+    if(alpha > 0.0) {
+        refracted = alpha * (-1.0 * eye) + (1.0 - alpha) * (-1.0 * normalDirection);
+    } else {
+        alpha = 1.0 + alpha;
+        s = normalize(-1.0 * eye + dot(eye, normalDirection) * normalDirection);
+        refracted = alpha * (-1.0 * eye) + (1.0 - alpha) * s;
+    }
+
+    refracted = normalize(refracted);
+
+    float env_refrac_dist = 0.5; // Distance of the env image behind (Refraction)
+
+    refracted = env_refrac_dist * (refracted / (refracted.z));
+
+    vec2 refracted_pix_coords = refracted.xy + v_texCoord.xy;
+
+    vec4 refracted_pixel = texture2D(u_bright, refracted_pix_coords);
+    
+    //*********************************************************
+
+    //*********************************************************
+    //Reflection
+    float env_reflec_dist = 0.5;
+
+    vec3 reflection_eye = -1.0 * eye + 2.0 * dot(normalDirection, eye) * normalDirection;
+
+    reflection_eye = normalize(reflection_eye);
+
+    vec2 reflected_coords = env_reflec_dist * (reflection_eye.xy / reflection.z);
+
+    reflected_coords = reflected_coords + v_texCoord.xy;
+
+    vec4 reflected_pixel = texture2D(u_dark, reflected_coords);
+    //*********************************************************
+
+    //*********************************************************
+    // Fresnel
+    
+    //*********************************************************
+    
     vec4 diffuse = intensity_diffuse * bright + (1.0 - intensity_diffuse) * dark;
 
     vec4 specular = intensity_specular * (bright + diffuse) + (1.0 - intensity_specular) * diffuse;
 
     vec4 border = intensity_border * dark + (1.0 - intensity_border) * specular;
     
-    gl_FragColor = border;
+    //gl_FragColor = 0.5 * refracted_pixel + 0.5 * reflected_pixel;
+
+    if(length(normal.xyz) > 0.005) {
+        gl_FragColor = 0.45 * refracted_pixel + 0.45 * reflected_pixel + 0.1 * border;
+    } else {
+        gl_FragColor = dark;
+    }
+    //gl_FragColor = 0.45 * refracted_pixel + 0.45 * reflected_pixel + 0.1 * border;
+    //testing
+    //gl_FragColor = texture2D(u_bright, v_texCoord * 3.0);
     //gl_FragColor = vec4(1.0, v_texCoord.y, v_texCoord.x, 1.0);
 }
 </script><!--

@@ -5,6 +5,7 @@ var imgURL;
 
 var canvas, gl, program, image, resolutionLocation, mouseLocation, mousex, mousey, ifuseVectorFieldLocation, ifUseVectorField;
 var interpolateDistanceLoc, interpolateDistance;
+var indexOfRefractionLoc, indexOfRefraction = 1.0;
 
 var num_images;
 
@@ -16,6 +17,14 @@ function cartoonEffect() {
   var sliderVal = document.getElementById("cartoonSlider").value;
   var paramCartoon = parseInt(sliderVal);
   interpolateDistance = 0.5 - paramCartoon/100.0;
+}
+
+function changeIOR() {
+  var sliderVal = document.getElementById("iorSlider").value;
+  var paramIOR = (parseInt(sliderVal) - 100)/100;
+  indexOfRefraction = Math.pow(2, paramIOR);
+  // console.log(indexOfRefraction);
+  // console.log(paramIOR);
 }
 
 function seeNextImage() {
@@ -204,6 +213,8 @@ function render(images) {
 
   interpolateDistanceLoc = gl.getUniformLocation(program, "u_interpolateDistance");
 
+  indexOfRefractionLoc = gl.getUniformLocation(program, "u_index_of_refraction");
+
   // Tell WebGL how to convert from clip space to pixels
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
@@ -270,6 +281,8 @@ function animateScene() {
   gl.uniform1i(ifuseVectorFieldLocation, ifUseVectorField);
 
   gl.uniform1f(interpolateDistanceLoc, interpolateDistance);
+
+  gl.uniform1f(indexOfRefractionLoc, indexOfRefraction);
 
   // Draw the rectangle.
   var primitiveType = gl.TRIANGLES;
