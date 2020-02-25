@@ -59,23 +59,25 @@ function urlInputByUser() {
 
 function main() {
 
-  images_list = [{'bright' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Homer/DI1.png', Image : null},
-                    'dark' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Homer/DI0.png', Image : null},
+  var bright_url = 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Homer/background.png';;
+  var dark_url = 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Homer/foreground.png';
+  images_list = [{'bright' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Homer/background.png', Image : null},
+                    'dark' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Homer/foreground.png', Image : null},
                     'normal_map' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Homer/SM.png', Image : null}
                   }];
 
-  images_list.push({'dark' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Shapes/bright.png', Image : null},
-              'bright' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Shapes/dark.png', Image : null},
+  images_list.push({'dark' : {url : dark_url, Image : null},
+              'bright' : {url : bright_url, Image : null},
               'normal_map' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Shapes/normalmap.png', Image : null}
               });
   
-  images_list.push({'dark' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Shapes/Shape1/dark.png', Image : null},
-              'bright' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Shapes/Shape1/bright.png', Image : null},
+  images_list.push({'dark' : {url : dark_url, Image : null},
+              'bright' : {url : bright_url, Image : null},
               'normal_map' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Shapes/Shape1/nomal.png', Image : null}
               });
 
-  images_list.push({'dark' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Shapes/Shape2/dark.png', Image : null},
-              'bright' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Shapes/Shape2/bright.png', Image : null},
+  images_list.push({'dark' : {url : dark_url, Image : null},
+              'bright' : {url : bright_url, Image : null},
               'normal_map' : {url : 'https://raw.githubusercontent.com/h44rd/NormalMaps/master/Shapes/Shape2/nomal.png', Image : null}
               });
   current_index = 0;
@@ -169,9 +171,15 @@ function render(images) {
     var texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
 
-    // Set the parameters so we can render any size image.
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    if(key == 'normal_map') {
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);  
+    }  else {
+      // Set the parameters so we can render any size image.
+      gl.generateMipmap(gl.TEXTURE_2D);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    }
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 

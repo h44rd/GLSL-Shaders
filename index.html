@@ -14,11 +14,13 @@
     Normal map url : <input type="text" id="normal_map_url"><br>
     <button onclick="urlInputByUser()">Submit URLs</button>
     <br>
-    <p>Cartoon Effect: </p>
+    <p>Fresnel Effect: </p>
     <input type="range" min="1" max="50" value="25" oninput="cartoonEffect()" id="cartoonSlider">
     
     <p>Index of Refraction: </p>
     <input type="range" min="0" max="200" value="50" oninput="changeIOR()" id="iorSlider">
+    <p>The Fresnel Function: </p>
+    <img src="images/function.png">
 </div>
 <!-- vertex shader -->
 <script  id="2d-vertex-shader" type="x-shader/x-vertex">
@@ -70,6 +72,9 @@ void main() {
     // vec4 bright = texture2D(u_bright, v_texCoord);
     // vec4 dark = texture2D(u_dark, v_texCoord);
 
+    if(length(normal) < 0.005) {
+        normal = vec4(0.0);
+    }
     vec4 bright = vec4(1.0, 1.0, 1.0, 1.0);
     vec4 dark = vec4(0.0, 0.0, 0.0, 1.0);
 
@@ -153,7 +158,7 @@ void main() {
 
     refracted = normalize(refracted);
 
-    float env_refrac_dist = 0.5; // Distance of the env image behind (Refraction)
+    float env_refrac_dist = 0.2; // Distance of the env image behind (Refraction)
 
     refracted = env_refrac_dist * (refracted / (refracted.z));
 
@@ -165,7 +170,7 @@ void main() {
 
     //*********************************************************
     //Reflection
-    float env_reflec_dist = 0.5;
+    float env_reflec_dist = 0.1;
 
     vec3 reflection_eye = -1.0 * eye + 2.0 * dot(normalDirection, eye) * normalDirection;
 
@@ -176,11 +181,24 @@ void main() {
     reflected_coords = reflected_coords + v_texCoord.xy;
 
     vec4 reflected_pixel = texture2D(u_dark, reflected_coords);
+    //vec4 reflected_pixel = vec4(1.0);    
     //*********************************************************
 
     //*********************************************************
     // Fresnel
-    
+    float cos_eye_normal = dot(eye, normalDirection);
+    float sin_eye_normal = sqrt(1.0 - pow(cos_eye_normal, 2.0));
+
+    float refl_refr_ratio;
+
+    float partition_fresnal = u_interpolateDistance/2.0;
+
+    if(sin_eye_normal < partition_fresnal) {
+        refl_refr_ratio = (1.0/2.0) * (1.0 - smoothstep(0.1, 0.9, (sin_eye_normal) * (1.0/partition_fresnal))); // Scaling the smoothstep and transforming the sin_eye_normal accordingly
+    } else {  //if(sin_eye_normal < 2.0 * partition_fresnal) {
+        refl_refr_ratio = smoothstep(0.1, 0.9, (sin_eye_normal - partition_fresnal) * (1.0/partition_fresnal));
+    }
+
     //*********************************************************
     
     vec4 diffuse = intensity_diffuse * bright + (1.0 - intensity_diffuse) * dark;
@@ -191,11 +209,14 @@ void main() {
     
     //gl_FragColor = 0.5 * refracted_pixel + 0.5 * reflected_pixel;
 
+    gl_FragColor = 0.5 * refracted_pixel + 0.5 * reflected_pixel;
+    
     if(length(normal.xyz) > 0.005) {
-        gl_FragColor = 0.45 * refracted_pixel + 0.45 * reflected_pixel + 0.1 * border;
+        gl_FragColor =  (refl_refr_ratio) * refracted_pixel + (1.0 - refl_refr_ratio) * reflected_pixel;
     } else {
-        gl_FragColor = dark;
+        gl_FragColor = texture2D(u_bright, v_texCoord);
     }
+    //gl_FragColor = 0.45 * refracted_pixel + 0.45 * reflected_pixel + 0.1 * border;
     //gl_FragColor = 0.45 * refracted_pixel + 0.45 * reflected_pixel + 0.1 * border;
     //testing
     //gl_FragColor = texture2D(u_bright, v_texCoord * 3.0);
